@@ -6,22 +6,35 @@ from datetime import datetime
 from pathlib import Path
 
 import gradio as gr
+import librosa
+import mlx.core as mx
 import numpy as np
 import soundfile as sf
 from mlx_audio.tts.utils import load_model
 
-VOICES = ["Ryan", "Vivian", "Serena", "Aiden", "Dylan", "Eric", "Uncle_Fu", "Ono_Anna", "Sohee"]
+VOICES = [
+    "Ryan (dynamic, strong rhythm)",
+    "Aiden (sunny, clear midrange)",
+    "Vivian (bright, slightly edgy)",
+    "Serena (warm, gentle)",
+    "Dylan (youthful Beijing)",
+    "Eric (lively Chengdu, husky)",
+    "Uncle_Fu (seasoned, low mellow)",
+    "Ono_Anna (playful Japanese)",
+    "Sohee (warm Korean)",
+]
 INSTRUCT_PRESETS = [
-    "excited and happy",
-    "calm and soothing",
-    "serious and professional",
-    "warm and friendly",
+    "speak with excitement and enthusiasm",
+    "slow deliberate pace with dramatic pauses",
+    "steady speed, clear articulation",
+    "whispered, secretive tone",
 ]
 
 PRESET_MODELS = {
     "1.7B-CustomVoice": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16",
 }
 CLONE_MODELS = {
+    "1.7B-Base": "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
     "0.6B-Base": "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16",
 }
 
@@ -73,7 +86,10 @@ def save_cloned_voice(audio_path: str, transcript: str, name: str) -> str:
         raise gr.Error(f"Voice '{safe_name}' already exists")
 
     voice_dir.mkdir(parents=True)
+
+    # Copy audio file (format conversion handled at load time)
     shutil.copy(audio_path, voice_dir / "audio.wav")
+
     (voice_dir / "transcript.txt").write_text(transcript.strip())
     (voice_dir / "metadata.json").write_text(json.dumps({
         "name": name.strip(),
@@ -166,15 +182,18 @@ def generate_preset(
     model_path = PRESET_MODELS[model_name]
     model = get_model(model_path)
 
+    # Extract voice name without description
+    voice_name = voice.split(" (")[0]
+
     results = list(model.generate(
         text=text,
-        voice=voice,
+        voice=voice_name,
         instruct=instruct.strip() or None,
         temperature=temp,
     ))
 
     audio = np.array(results[0].audio)
-    metadata = save_generation(audio, voice, temp, instruct.strip())
+    metadata = save_generation(audio, voice_name, temp, instruct.strip())
 
     new_history = [metadata] + history
     return metadata["path"], new_history
@@ -215,9 +234,13 @@ def generate_clone(
     model_path = CLONE_MODELS[model_name]
     model = get_model(model_path)
 
+    # Load audio with librosa (supports M4A, MP3, etc.) and convert to mlx array
+    audio_np, _ = librosa.load(actual_audio, sr=24000, mono=True)
+    audio_mx = mx.array(audio_np)
+
     results = list(model.generate(
         text=text,
-        audio=actual_audio,
+        ref_audio=audio_mx,
         ref_text=actual_text,
         temperature=temp,
     ))
@@ -318,7 +341,7 @@ with gr.Blocks(title="Qwen3-TTS") as app:
 
                     preset_voice = gr.Dropdown(
                         choices=VOICES,
-                        value="Ryan",
+                        value=VOICES[0],
                         label="Voice",
                     )
 
@@ -390,12 +413,6 @@ with gr.Blocks(title="Qwen3-TTS") as app:
                             elem_classes=["compact-input"],
                         )
                         save_voice_btn = gr.Button("Save", size="sm", scale=1)
-
-                    save_voice_status = gr.Textbox(
-                        label="Status",
-                        interactive=False,
-                        visible=False,
-                    )
 
                     clone_model = gr.Dropdown(
                         choices=list(CLONE_MODELS.keys()),
@@ -492,7 +509,8 @@ with gr.Blocks(title="Qwen3-TTS") as app:
     def do_save_voice(audio, transcript, name):
         msg = save_cloned_voice(audio, transcript, name)
         new_choices = get_saved_voice_choices()
-        return gr.update(value=msg, visible=True), gr.update(choices=new_choices)
+        gr.Info(msg)
+        return gr.update(choices=new_choices, value=name.strip())
 
     def do_refresh_voices():
         return gr.update(choices=get_saved_voice_choices())
@@ -500,7 +518,10 @@ with gr.Blocks(title="Qwen3-TTS") as app:
     # Slot 0 outputs (current) for generate
     slot0_outputs = [output_slots[0]["container"], output_slots[0]["filename"], output_slots[0]["audio"]]
 
-    # Chain: first shift history (instant), then generate (slow, only updates slot 0)
+    # JavaScript to reset audio seek position
+    reset_audio_js = "() => { document.querySelectorAll('audio').forEach(a => { a.currentTime = 0; a.pause(); }); }"
+
+    # Chain: first shift history (instant), then generate (slow, only updates slot 0), then reset audio
     preset_btn.click(
         fn=shift_history,
         inputs=[history_state],
@@ -509,6 +530,9 @@ with gr.Blocks(title="Qwen3-TTS") as app:
         fn=do_generate_preset,
         inputs=[preset_text, preset_voice, preset_instruct, preset_temp, preset_model, history_state],
         outputs=[history_state] + slot0_outputs,
+    ).then(
+        fn=None,
+        js=reset_audio_js,
     )
 
     clone_btn.click(
@@ -519,6 +543,9 @@ with gr.Blocks(title="Qwen3-TTS") as app:
         fn=do_generate_clone,
         inputs=[clone_text, saved_voice_dropdown, clone_ref_audio, clone_ref_text, clone_temp, clone_model, history_state],
         outputs=[history_state] + slot0_outputs,
+    ).then(
+        fn=None,
+        js=reset_audio_js,
     )
 
     # Wire up rename (on blur/submit) and delete for each slot
@@ -543,7 +570,7 @@ with gr.Blocks(title="Qwen3-TTS") as app:
     save_voice_btn.click(
         fn=do_save_voice,
         inputs=[clone_ref_audio, clone_ref_text, save_voice_name],
-        outputs=[save_voice_status, saved_voice_dropdown],
+        outputs=[saved_voice_dropdown],
     )
 
 if __name__ == "__main__":
