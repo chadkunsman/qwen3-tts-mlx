@@ -143,21 +143,43 @@ uv run python app.py
 
 ### Features
 - **Two-column layout**: Controls on left, output waveforms on right
-- **Preset Voices tab**: 9 built-in voices with style instruction presets
-- **Voice Cloning tab**: Clone voices from reference audio, save for reuse
+- **Preset Voices tab**: 9 built-in voices with descriptions and style presets
+- **Voice Cloning tab**: Clone voices from reference audio (supports M4A, MP3, WAV)
 - **Generation history**: Up to 5 recent outputs with waveform playback
 - **Inline management**: Edit filenames directly, delete with confirmation
-- **Metadata display**: Shows voice, temperature, and instruction for each generation
+- **Metadata display**: Voice, temperature, and instruction shown in audio label
 - **Auto-save**: All generations saved to `outputs/` folder
+
+### Available Voices (Preset Tab)
+| Voice | Description | Best For |
+|-------|-------------|----------|
+| Ryan | Dynamic, strong rhythm | English |
+| Aiden | Sunny, clear midrange | English |
+| Vivian | Bright, slightly edgy | Chinese |
+| Serena | Warm, gentle | Chinese |
+| Dylan | Youthful Beijing | Chinese (Beijing) |
+| Eric | Lively, husky | Chinese (Sichuan) |
+| Uncle_Fu | Seasoned, low mellow | Chinese |
+| Ono_Anna | Playful | Japanese |
+| Sohee | Warm | Korean |
+
+### Style Instruction Tips
+- Use specific delivery instructions: `speak with excitement and enthusiasm`
+- Control pace: `slow deliberate pace with dramatic pauses`
+- Articulation: `steady speed, clear articulation`
+- Special effects: `whispered, secretive tone`
+- Prevent unwanted sounds: `happy but without laughing`
+
+### Voice Cloning
+- **1.7B-Base** (default): Better quality, larger model
+- **0.6B-Base**: Faster, smaller model
+- Supports M4A, MP3, WAV audio files via librosa
+- Save voices for reuse - stored in `saved_voices/`
 
 ### Output Management
 - Edit filename textbox directly to rename files on disk
 - Click 🗑️ to delete (confirms deletion from disk)
 - Files saved as `{voice}_{timestamp}.wav` or `clone_{timestamp}.wav`
-
-### Saved Voices
-- Save cloned voices to `saved_voices/` for reuse
-- Each saved voice stores: audio file, transcript, metadata
 
 ## Project Structure
 ```
