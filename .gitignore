@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Generated audio
+outputs/
+test_outputs/
+
+# Voice files
+saved_voices/
+voice_samples/
+reference_voices/
+
+# macOS
+.DS_Store
