@@ -131,17 +131,45 @@ source .venv/bin/activate && python -m mlx_audio.stt.generate \
   --language en
 ```
 
+## Web App (Gradio)
+
+A full-featured Gradio web interface for TTS generation.
+
+### Run the App
+```bash
+uv run python app.py
+# Opens at http://127.0.0.1:7860
+```
+
+### Features
+- **Two-column layout**: Controls on left, output waveforms on right
+- **Preset Voices tab**: 9 built-in voices with style instruction presets
+- **Voice Cloning tab**: Clone voices from reference audio, save for reuse
+- **Generation history**: Up to 5 recent outputs with waveform playback
+- **Inline management**: Edit filenames directly, delete with confirmation
+- **Metadata display**: Shows voice, temperature, and instruction for each generation
+- **Auto-save**: All generations saved to `outputs/` folder
+
+### Output Management
+- Edit filename textbox directly to rename files on disk
+- Click 🗑️ to delete (confirms deletion from disk)
+- Files saved as `{voice}_{timestamp}.wav` or `clone_{timestamp}.wav`
+
+### Saved Voices
+- Save cloned voices to `saved_voices/` for reuse
+- Each saved voice stores: audio file, transcript, metadata
+
 ## Project Structure
 ```
 qwen3_tts/
 ├── .venv/                      # Virtual environment
-├── ref_voice.m4a               # Calm reference audio
-├── ref_voice_energetic.m4a     # Energetic reference audio
-├── voice_samples/              # Generated samples
-│   ├── ryan/                   # Ryan temperature tests (22 samples)
-│   └── *.wav                   # Preset voice samples
+├── app.py                      # Gradio web app
+├── outputs/                    # Generated audio files (auto-created)
+├── saved_voices/               # Saved cloned voices (auto-created)
+├── reference_voices/           # Reference audio for cloning
 ├── analyze_audio.py            # Audio file analyzer (detect broken files)
 ├── test_silence.py             # Temperature sweep test runner
+├── test_tts.py                 # TTS generation tests
 ├── SILENCE_INVESTIGATION.md    # Full investigation results
 ├── README.md                   # This file
 └── main.py                     # (unused placeholder)
