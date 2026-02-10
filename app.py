@@ -592,7 +592,7 @@ with gr.Blocks(title="Qwen3-TTS") as app:
                     create_voice_btn = gr.Button("Save Voice", variant="primary", elem_classes=["generate-btn"])
 
                 # VOICE CLONING TAB
-                with gr.Tab("Voice Cloning"):
+                with gr.Tab("Use Saved Voice"):
                     clone_text = gr.Textbox(
                         label="Text",
                         placeholder="Enter text to synthesize...",
