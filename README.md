@@ -172,6 +172,11 @@ Models are downloaded to `~/.cache/huggingface/hub/` and can be managed from the
 
 Saved voices are stored in `saved_voices/`.
 
+## Known Issues
+
+- **"model of type qwen3_tts to instantiate a model of type" / "incorrect regex pattern"** — Harmless warnings from `transformers` about the tokenizer bundled with the mlx-community model weights. These come from upstream and don't affect generation.
+- **"PySoundFile failed. Trying audioread instead."** — Librosa falls back to audioread when loading non-WAV reference audio (M4A, MP3). Generation still works; the warning is cosmetic.
+
 ## Supported Languages
 
 Chinese, English, Japanese, Korean, German, French, Russian, Portuguese, Spanish, Italian
